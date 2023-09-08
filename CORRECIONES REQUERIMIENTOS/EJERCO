@@ -1,0 +1,12 @@
+En el contexto de los programas CICS que se ejecutan en un mainframe IBM utilizando COBOL, hay varias formas de iniciar la ejecución de una tarea distinta. A continuación, se explican las diferencias entre XCONTROL, LINK y START:
+
+1. XCONTROL: 
+XCONTROL es un comando que se utiliza para transferir el control de un programa a otro programa dentro de la misma transacción CICS. Esto significa que ambos programas comparten el mismo contexto y recursos de transacción. XCONTROL es útil cuando se necesita dividir una tarea en múltiples programas, cada uno con su propia funcionalidad específica. El programa que se inicia mediante XCONTROL no necesita estar definido en el CSD (Control Program Directory) de CICS.
+
+2. LINK: 
+LINK es un comando que se utiliza para iniciar la ejecución de un programa que está definido en el CSD de CICS. La ejecución del programa se realiza en una transacción diferente y puede compartir algunos recursos con la transacción original. Después de que el programa finalice su ejecución, el control vuelve al programa original. El programa que se inicia mediante LINK debe estar definido en el CSD de CICS.
+
+3. START:
+START es un comando que se utiliza para iniciar la ejecución de un programa que está definido en el CSD de CICS. La ejecución del programa se realiza en una transacción diferente y no comparte recursos con la transacción original. Una vez que se completa la ejecución del programa, la transacción original continúa su ejecución. El programa que se inicia mediante START debe estar definido en el CSD de CICS.
+
+En resumen, XCONTROL se utiliza para transferir el control a otro programa dentro de la misma transacción CICS, mientras que LINK y START se utilizan para iniciar la ejecución de un programa en una nueva transacción, con la diferencia de que LINK comparte algunos recursos con la transacción original, mientras que START no lo hace.

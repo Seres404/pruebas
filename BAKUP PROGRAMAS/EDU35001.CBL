@@ -1,0 +1,221 @@
+      ******************************************************************
+      * FECHA       : 22/05/2023                                       *
+      * PROGRAMADOR : ERICK DANIEL RAMIREZ DIVAS                       *
+      * APLICACION  : EDUCACION                                        *
+      * PROGRAMA    : ED3D1C01                                         *
+      * TIPO        : BATCH                                            *
+      * DESCRIPCION : EL PROGRAMA HACE UNA CARGA INICIAL DE UN ARCHIVO *
+      *             : VSAM KSDS, LEYENDO UN ARCHIVO DE ENTRADA ESDS Y  *
+      *             : ORDENANDO SUS REGISTROS PARA LUEGO HACER LA CARGA*
+      *             : LES SERAN ORDENADAS POR AGENCIA Y ENVIADAS A UN  *
+      * ARCHIVOS    : EDM1AH (VSAM KSDS SALIDA) ESD1AH(ESDS ENTRADA)   *
+      * PROGRAMA(S) : NO APLICA                                        *
+      ******************************************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.                     ED3D1C01.
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+            SELECT ESD1AH  ASSIGN        TO AS-ESD1AH
+                           ORGANIZATION  IS SEQUENTIAL
+                           ACCESS        IS SEQUENTIAL
+                           FILE STATUS   IS FS-ESD1AH.
+            SELECT EDM1AH  ASSIGN        TO EDM1AH
+                           ORGANIZATION  IS INDEXED
+                           ACCESS        IS SEQUENTIAL
+                           RECORD KEY    IS EDMA-LLAVE
+                           FILE STATUS   IS FS-EDM1AH
+                                            FSE-EDM1AH.
+            SELECT WORKFILE ASSIGN TO SORTWK1.
+       DATA DIVISION.
+       FILE SECTION.
+      ******************************************************************
+      *                DEFINICIONES DE ARCHIVOS A UTILIZAR             *
+      ******************************************************************
+       FD ESD1AH.
+          COPY EDMAAHS.
+       FD EDM1AH.
+          COPY EDMAAH.
+       SD WORKFILE.
+       01 WORK-REG.
+           02  EDMAS-LLAVE.
+               04  EDMAS-NUMERO-CUENTA              PIC  9(010).
+           02  EDMAS-DATA.
+               04  EDMAS-CODIGO-CLIENTE             PIC  9(008).
+               04  EDMAS-CODIGO-CLIENTE-ALFA REDEFINES
+                        EDMAS-CODIGO-CLIENTE        PIC  X(008).
+               04  EDMAS-FECHA-APERTURA-CUENTA      PIC  9(008).
+               04  EDMAS-SALDO-CUENTA               PIC S9(009)V99.
+               04  EDMAS-FECHA-ULTIMO-MOVMNTO       PIC  9(008).
+               04  EDMAS-MARCA-ELIMINADO            PIC  X(001).
+               04  EDMAS-FILLER                     PIC  X(034).
+      ******************************************************************
+       WORKING-STORAGE SECTION.
+       01 WKS-CAMPOS-DE-TRABAJO.
+          02 WKS-PROGRAMA        PIC X(08)  VALUE "ED3D1C01".
+          02 FS-ESD1AH           PIC 9(02)  VALUE ZEROS.
+          02 FS-EDM1AH           PIC 9(02)  VALUE ZEROS.
+          02 WKS-DISPARADORES    PIC 9(01).
+             88 WKS-FIN                     VALUE 1.
+             88 WKS-FIN-WF                  VALUE 2.
+      ******************************************************************
+      *    VARIABLES DE RUTINA PARA CONTROL DE FILE STATUS EXTENDIDO   *
+      ******************************************************************
+       01 FSE-EDM1AH.
+          02 FSE-RETURN          PIC S9(04) COMP-5 VALUE ZEROS.
+          02 FSE-FUNCTION        PIC S9(04) COMP-5 VALUE ZEROS.
+          02 FSE-FEEDBACK        PIC S9(04) COMP-5 VALUE ZEROS.
+      * ---> VARIABLES DE RUTINA PARA CONTROL DE FILE STATUS EXTENDIDO
+       01 PROGRAMA               PIC X(08)  VALUE SPACES.
+       01 ARCHIVO                PIC X(08)  VALUE SPACES.
+       01 ACCION                 PIC X(10)  VALUE SPACES.
+       01 LLAVE                  PIC X(32)  VALUE SPACES.
+       PROCEDURE DIVISION.
+       000-PRINCIPAL SECTION.
+           PERFORM 100-ABRIR-ARCHIVOS
+           PERFORM 110-VERIFICAR-FS
+           PERFORM 200-ORDENAR-DATOS
+           PERFORM XXX-CIERRA-ARCHIVOS
+           STOP RUN.
+       000-PRINCIPAL-E.            EXIT.
+
+       100-ABRIR-ARCHIVOS SECTION.
+           OPEN INPUT  ESD1AH
+           OPEN OUTPUT EDM1AH.
+       100-ABRIR-ARCHIVOS-E.
+
+       110-VERIFICAR-FS SECTION.
+           IF FS-ESD1AH = 97 AND FS-EDM1AH = 97
+              MOVE ZEROS TO FS-ESD1AH
+              MOVE ZEROS TO FS-EDM1AH
+           END-IF
+           IF FS-ESD1AH NOT = 0
+              DISPLAY "================================================"
+                       UPON CONSOLE
+              DISPLAY "* HUBO UN ERROR AL ABRIR EL ARCHIVO DE ESD1AH *"
+                       UPON CONSOLE
+              DISPLAY "================================================"
+                       UPON CONSOLE
+              DISPLAY " FILE ESTATUS DEL ARCHIVO ES  : (" FS-ESD1AH ")"
+                       UPON CONSOLE
+              DISPLAY "================================================"
+                       UPON CONSOLE
+              PERFORM XXX-CIERRA-ARCHIVOS
+              MOVE 91 TO RETURN-CODE
+              STOP RUN
+           ELSE
+           IF FS-EDM1AH NOT EQUAL 0
+              MOVE 'OPEN'    TO ACCION
+              MOVE SPACES    TO LLAVE
+              MOVE 'EDM1AH'  TO ARCHIVO
+              CALL 'DEBD1R00' USING PROGRAMA, ARCHIVO, ACCION,
+                                    LLAVE, FS-EDM1AH, FSE-EDM1AH
+              MOVE  91  TO RETURN-CODE
+              DISPLAY
+              "    >>> ALGO SALIO MAL AL ABRIR EL ARCHIVO EDM1AH <<<"
+              UPON CONSOLE
+              DISPLAY
+              "          !!! VERIFICAR DETALLES EN SPOOL !!!"
+              UPON CONSOLE
+              PERFORM XXX-CIERRA-ARCHIVOS
+              STOP RUN
+           END-IF.
+       110-VERIFICAR-FS-E. EXIT.
+
+       200-ORDENAR-DATOS SECTION.
+           SORT WORKFILE ON ASCENDING KEY EDMAS-NUMERO-CUENTA
+                IN WORK-REG
+                INPUT  PROCEDURE IS 210-SORT-VALIDACION
+                OUTPUT PROCEDURE IS 220-DATOS-ORDENADOS-KSDS.
+       200-ORDENAR-DATOS-E. EXIT.
+
+       210-SORT-VALIDACION SECTION.
+           READ ESD1AH
+                AT END SET WKS-FIN TO TRUE
+           END-READ
+           EVALUATE FS-ESD1AH
+              WHEN 0
+                   PERFORM 211-LECTURAS-CICLOS
+              WHEN 10
+                   DISPLAY " EL ARCHIVO ESTABA VACIO EDM1AH "
+                   UPON CONSOLE
+                   PERFORM XXX-CIERRA-ARCHIVOS
+                   STOP RUN
+              WHEN OTHER
+                   PERFORM 300-ERRORES-LECTURA-FSE
+           END-EVALUATE.
+       210-SORT-VALIDACION-E. EXIT.
+
+       211-LECTURAS-CICLOS SECTION.
+           PERFORM UNTIL WKS-FIN
+                   MOVE CORRESPONDING REG-EDMAAHS TO WORK-REG
+                   RELEASE WORK-REG
+                   READ ESD1AH
+                        AT END SET WKS-FIN TO TRUE
+                   END-READ
+                   IF FS-ESD1AH NOT EQUAL 0 AND 10
+                        PERFORM 300-ERRORES-LECTURA-FSE
+                   END-IF
+           END-PERFORM.
+       211-LECTURAS-CICLOS-E. EXIT.
+
+       220-DATOS-ORDENADOS-KSDS SECTION.
+           RETURN WORKFILE
+                AT END SET WKS-FIN-WF TO TRUE
+           END-RETURN
+           PERFORM UNTIL WKS-FIN-WF
+                MOVE  EDMAS-LLAVE                  IN WORK-REG TO
+                EDMA-LLAVE
+                MOVE  EDMAS-CODIGO-CLIENTE         IN WORK-REG TO
+                EDMA-CODIGO-CLIENTE
+                MOVE  EDMAS-FECHA-APERTURA-CUENTA  IN WORK-REG TO
+                EDMA-FECHA-APERTURA-CUENTA
+                MOVE  EDMAS-SALDO-CUENTA           IN WORK-REG TO
+                EDMA-SALDO-CUENTA
+                MOVE  EDMAS-FECHA-ULTIMO-MOVMNTO   IN WORK-REG TO
+                EDMA-FECHA-ULTIMO-MOVMNTO
+                MOVE  EDMAS-MARCA-ELIMINADO        IN WORK-REG TO
+                EDMA-MARCA-ELIMINADO
+                MOVE  EDMAS-FILLER                 IN WORK-REG TO
+                EDMA-FILLER
+                WRITE REG-EDMAAH
+                IF FS-EDM1AH NOT EQUAL 0 AND 22
+                      PERFORM 300-ERRORES-LECTURA-FSE
+                END-IF
+                RETURN WORKFILE
+                     AT END SET WKS-FIN-WF TO TRUE
+                END-RETURN
+           END-PERFORM.
+       220-DATOS-ORDENADOS-KSDS-E. EXIT.
+
+       300-ERRORES-LECTURA-FSE SECTION.
+              MOVE 'READ'     TO ACCION
+              MOVE SPACES     TO LLAVE
+              MOVE 'EDM1AH'   TO ARCHIVO
+              CALL 'DEBD1R00' USING PROGRAMA, ARCHIVO, ACCION,
+                                    LLAVE, FS-EDM1AH, FSE-EDM1AH
+              MOVE  91        TO RETURN-CODE
+              DISPLAY
+              "    >>> ALGO SALIO MAL AL LEER EL ARCHIVO EDM1AH <<<"
+              UPON CONSOLE
+              DISPLAY
+              "          !!! VERIFICAR DETALLES EN SPOOL !!!"
+              UPON CONSOLE
+              PERFORM XXX-CIERRA-ARCHIVOS
+              STOP RUN.
+       300-ERRORES-LECTURA-FSE-E. EXIT.
+
+       XXX-CIERRA-ARCHIVOS SECTION.
+           CLOSE ESD1AH
+           CLOSE EDM1AH.
+       XXX-CIERRA-ARCHIVOS-E. EXIT.
+
+EXEC CICS STARTBR
+   FILE('file-name')
+   RIDFLD(data-area) [GENERIC]
+   KEYLENGTH(data-value)
+   REQID(data-value)
+   SYSID(system-name)
+   GTEQ/EQUAL
+END-EXEC.

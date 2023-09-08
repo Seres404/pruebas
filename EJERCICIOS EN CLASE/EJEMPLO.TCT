@@ -1,0 +1,73 @@
+==========================================================
+                   INVENTARIO DE PELICULAS
+==========================================================
+==> TIPO DE BUSQUEDA :
+    1 PARA CODIGO DE PELICULA 2 PARA NOMBRE DE PELICULA
+==> HAS SELECCIONADO EL TIPO DE BUSQUEDA : (1)
+==> ESTAMOS BUSCANDO EL CONDIGO... : ( 11111)
+==========================================================
+*        EXCELENTE, TENEMOS ESTA PELICULA EN STOCK       *
+==========================================================
+==> NOMBRE DE PELICULA : TERMINATOR, THE
+==> CODIGO DE PELICULA : 11111
+==> CODIGO PROVEEDOR   : 02
+==========================================================
+ 
+ 
+ 
+==========================================================
+                   INVENTARIO DE PELICULAS
+==========================================================
+==> TIPO DE BUSQUEDA :
+    1 PARA CODIGO DE PELICULA 2 PARA NOMBRE DE PELICULA
+==> HAS SELECCIONADO EL TIPO DE BUSQUEDA : (1)
+==> ESTAMOS BUSCANDO EL CONDIGO... : ( 99999)
+==========================================================
+         OH NO LA PELI QUE BUSCAS NO LA TENEMOS
+               ===>POSIBLES CAUSAS<===
+ 1)  ES POSIBLE QUE EL CODIGO ESTÉ MAL ESCRITO
+ 2)  SOLO ACEPTAMOS 5 DIGITOS SIN ESPACIOS
+ 3)  NO ES POSIBLE VALIDAR LETRAS
+ SI TODO FUE ESCRITO EN ORDEN LA PELI NO ESTÁ
+ EN EL STOCK, LO SENTIMOS MUCHO
+==========================================================
+ 
+ 
+ 
+==========================================================
+                   INVENTARIO DE PELICULAS
+==========================================================
+==> TIPO DE BUSQUEDA :
+    1 PARA CODIGO DE PELICULA 2 PARA NOMBRE DE PELICULA
+==> HAS SELECCIONADO EL TIPO DE BUSQUEDA : (2)
+==> ESTAMOS BUSCANDO LA PELICULA... :  JURASSIC PARK
+==========================================================
+*        EXCELENTE, TENEMOS ESTA PELICULA EN STOCK       *
+==========================================================
+==> NOMBRE DE PELICULA : JURASSIC PARK
+==> CODIGO DE PELICULA : 04646
+==> CODIGO PROVEEDOR   : 15
+==========================================================
+ 
+ 
+ 
+==========================================================
+                   INVENTARIO DE PELICULAS
+==========================================================
+==> TIPO DE BUSQUEDA :
+    1 PARA CODIGO DE PELICULA 2 PARA NOMBRE DE PELICULA
+==> HAS SELECCIONADO EL TIPO DE BUSQUEDA : (3)
+==========================================================
+==>  OH NO HAS INGRESADO UNA OPCIÓN INVALIDA
+==>  RECUERDA QUE SOLO PUEDES SELECCIONAR 1 O 2
+==========================================================
+ 
+ 
+ 
+ 
+==========================================================
+                          ESTADISTICAS
+==========================================================
+ TOTAL DE BUSQUEDAS REALIZADAS :04
+ TOTAL DE BUSQUEDAS CON ERROR  :01
+==========================================================

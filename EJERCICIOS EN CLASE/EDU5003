@@ -1,0 +1,274 @@
+      ******************************************************************
+      * FECHA       : 25/05/2023                                       *
+      * PROGRAMADOR : ERICK DANIEL RAMIREZ DIVAS                       *
+      * APLICACION  : EDUCACION                                        *
+      * PROGRAMA    : EDU33016                                         *
+      * TIPO        : BATCH                                            *
+      * DESCRIPCION : ESTE PROGRAMA LEE UN ARCHIVO MAESTRO DE CUENTAS  *
+      *             : DE LAS CUALES RECUPERA LAS CUENTAS QUE CUMPLAN   *
+      *             : CON CIERTOS PARAMETROS,MISMAS QUE SERAN ENVIADAS *
+      *             : A UN REPORTE                                     *
+      * ARCHIVOS    : EDP1AH(VSAM KSDS), REPORTE(PS SALIDA),           *
+      * PROGRAMA(S) : RUTINA DEBD1R00, FILE STATUS EXTENDED            *
+      ******************************************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.                     ED3D1R01.
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SPECIAL-NAMES.
+           CURRENCY SIGN IS "Q" WITH PICTURE SYMBOL "Q".
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT EDP1AH   ASSIGN TO EDP1AH
+                           ORGANIZATION  IS INDEXED
+                           ACCESS        IS SEQUENTIAL
+                           RECORD KEY    IS EDMA-CODIGO-CLIENTE
+                           FILE STATUS   IS FS-EDP1AH
+                                            FSE-EDP1AH.
+           SELECT REPORTE  ASSIGN TO SYS010
+                           FILE STATUS IS FS-REPORTE.
+       DATA DIVISION.
+       FILE SECTION.
+      ******************************************************************
+      *                DEFINICIONES DE ARCHIVOS A UTILIZAR             *
+      ******************************************************************
+       FD EDP1AH.
+          COPY EDMAAH.
+       FD REPORTE
+          REPORT IS REPORTE-AHORRO.
+      ******************************************************************
+      *                    VARIABLES Y CAMPOS DE TRABAJO               *
+      ******************************************************************
+       WORKING-STORAGE SECTION.
+       01 WKS-CAMPOS-DE-TRABAJO.
+          02 WKS-PROGRAMA              PIC X(08) VALUE "ED3D1R01".
+          02 FS-EDP1AH                 PIC 9(02) VALUE ZEROS.
+          02 FS-REPORTE                PIC 9(02) VALUE ZEROS.
+          02 WKS-DISPARADORES          PIC 9(01).
+              88 WKS-FIN                         VALUE 1.
+              88 WKS-FIN-WF                      VALUE 2.
+          02 WKS-FECHA.
+              03 WKS-DIA               PIC 9(02) VALUE ZEROS.
+              03 FILLER                PIC X(01) VALUE '/'.
+              03 WKS-MES               PIC 9(02) VALUE ZEROS.
+              03 FILLER                PIC X(01) VALUE '/'.
+              03 WKS-ANIO              PIC 9(04) VALUE ZEROS.
+       01 FSE-EDP1AH.
+          02 FSE-RETURN                PIC S9(04) COMP-5 VALUE ZEROS.
+          02 FSE-FUNCTION              PIC S9(04) COMP-5 VALUE ZEROS.
+          02 FSE-FEEDBACK              PIC S9(04) COMP-5 VALUE ZEROS.
+      *Variables de Rutina para control de File Status Extendido
+       01  PROGRAMA                    PIC X(08) VALUE SPACES.
+       01  ARCHIVO                     PIC X(08) VALUE SPACES.
+       01  ACCION                      PIC X(10) VALUE SPACES.
+       01  LLAVE                       PIC X(32) VALUE SPACES.
+      ******************************************************************
+      *                  MAQUETACION REPORTE DE SALIDA                 *
+      ******************************************************************
+       REPORT SECTION.
+       RD REPORTE-AHORRO
+          CONTROLS ARE FINAL
+          LINE LIMIT IS 127
+          PAGE LIMIT IS 020
+          HEADING       001
+          FIRST DETAIL  006
+          LAST DETAIL   015
+          FOOTING       018.
+      ******************************************************************
+      *                     MAQUETACION PAGE HEADER                    *
+      ******************************************************************
+       01  TYPE IS PH.
+           02 LINE 1.
+              03 COLUMN 001            PIC X(22) VALUE
+                 'BANCO INDUSTRIAL, S.A.'.
+              03 COLUMN 053            PIC X(25) VALUE
+                 'REPORTE CUENTAS DE AHORRO'.
+              03 COLUMN 111            PIC X(17) VALUE
+                 'S E M I L L E R O'.
+           02 LINE 2.
+              03 COLUMN   1            PIC X(25) VALUE
+                 'ED3D1R01    00.24052023.R'.
+              03 COLUMN 050            PIC X(20) VALUE
+                 'FECHA DEL MOVIMIENTO'.
+              03 COLUMN 071            PIC X(10) SOURCE WKS-FECHA.
+              03 COLUMN 117            PIC X(06) VALUE 'PAGINA'.
+              03 COLUMN 124            PIC Z(04) SOURCE PAGE-COUNTER IN
+                                                 REPORTE-AHORRO.
+           02 LINE 3.
+              03 COLUMN  01            PIC X(127) VALUE ALL '='.
+           02 LINE 4.
+              03 COLUMN  01            PIC X(41) VALUE
+                 "*  CODIGO DE CLIENTE - NUMERO DE CUENTA -".
+              03 COLUMN  43            PIC X(40) VALUE
+                 "FECHA DE APERTURA - SALDO DE LA CUENTA -".
+              03 COLUMN  84            PIC X(44) VALUE
+                 "FECHA ULTIMO MOVIMIENTO - CODIGO ESTATUS - *".
+           02 LINE 5.
+              03 COLUMN  01            PIC X(127) VALUE ALL '='.
+      ******************************************************************
+      *                     MAQUETACION LINEA DETALLE                  *
+      ******************************************************************
+       01  DETAILLINE TYPE IS DE.
+           02 LINE IS PLUS 1.
+              03 COLUMN 008            PIC 9(08)          SOURCE
+                 EDMA-CODIGO-CLIENTE.
+              03 COLUMN 027            PIC 9(10)          SOURCE
+                 EDMA-NUMERO-CUENTA.
+              03 COLUMN 047            PIC 99/99/9999     SOURCE
+                 EDMA-FECHA-APERTURA-CUENTA.
+              03 COLUMN 067            PIC QQQ,QQQ,QQ9.99 SOURCE
+                 EDMA-SALDO-CUENTA.
+              03 COLUMN 091            PIC 99/99/9999     SOURCE
+                 EDMA-FECHA-ULTIMO-MOVMNTO.
+              03 COLUMN 118            PIC X(01)          SOURCE
+                 EDMA-MARCA-ELIMINADO.
+      ******************************************************************
+      *                  MAQUETACION CONTROL FOOTING FINAL             *
+      ******************************************************************
+       01 TYPE IS CF FINAL.
+           02 LINE IS PLUS 1.
+              03 COLUMN 047            PIC X(35) VALUE
+              "========== R E S U M E N ==========".
+           02 LINE IS PLUS 1.
+              03 COLUMN 043            PIC X(27) VALUE
+              "TOTAL CUENTAS DE AHORRO   =".
+              03 COLUMN 074            PIC ZZZ,ZZZ,ZZ9
+              COUNT OF DETAILLINE.
+           02 LINE IS PLUS 1.
+              03 COLUMN 043            PIC X(27) VALUE
+              "TOTAL GENERAL SALDOS      =".
+              03 COLUMN 074            PIC QQQ,QQQ,QQQ.QQ SOURCE
+              SUM EDMA-SALDO-CUENTA.
+      ******************************************************************
+      *                     MAQUETACION PAGE FOOTING                   *
+      ******************************************************************
+       01  TYPE IS PF.
+           02  LINE PLUS 0.
+              03 COLUMN 004            PIC X(25) VALUE
+              'FECHA Y HORA DE OPERACION'.
+              03 COLUMN 032            PIC 99/99/9999 FUNC DATE.
+              03 COLUMN 045            PIC 99'H.'99'M.'99'S' FUNC TIME.
+              03 COLUMN 061            PIC X(16) VALUE
+              'DATA-CENTRO S.A.'.
+              03 COLUMN 115            PIC X(6)  VALUE 'PAGINA'.
+              03 COLUMN 124            PIC ZZZZ SOURCE PAGE-COUNTER IN
+                                                REPORTE-AHORRO.
+           02 LINE PLUS 1.
+              03 COLUMN 001            PIC X(127) VALUE ALL SPACES.
+      ******************************************************************
+      *                     MAQUETACION REPORT FINAL                   *
+      ******************************************************************
+       01  TYPE IS RF.
+           02 LINE PLUS 3.
+             03 COLUMN  035            PIC X(48) VALUE
+             "ESTA ES LA ULTIMA HOJA DE ESTE REPORTE CONSTA DE".
+             03 COLUMN  084            PIC Z,ZZZ SOURCE PAGE-COUNTER IN
+                                                 REPORTE-AHORRO.
+             03 COLUMN  094            PIC X(07)  VALUE 'PAGINAS'.
+      ******************************************************************
+       PROCEDURE DIVISION.
+       000-MAIN   SECTION.
+           PERFORM 100-ABRE-ARCHIVOS
+           PERFORM 110-VERIFICA-FS-E
+           PERFORM 200-GENERA-REPORT
+           PERFORM XXX-CIERRA-ARCHIVOS
+           STOP RUN.
+       000-MAIN-E. EXIT.
+
+       100-ABRE-ARCHIVOS SECTION.
+           OPEN INPUT  EDP1AH
+           OPEN OUTPUT REPORTE
+           MOVE "EDU33021"   TO PROGRAMA
+           ACCEPT WKS-FECHA  FROM SYSIN
+           INITIATE REPORTE-AHORRO.
+       100-ABRE-ARCHIVOS-E. EXIT.
+
+       110-VERIFICA-FS-E SECTION.
+           IF FS-REPORTE = 97 AND FS-EDP1AH
+                MOVE ZEROS TO FS-EDP1AH
+                MOVE ZEROS TO FS-REPORTE
+           END-IF
+           IF FS-REPORTE NOT = 0
+              DISPLAY "================================================"
+                       UPON CONSOLE
+              DISPLAY "* HUBO UN ERROR AL ABRIR EL ARCHIVO DE REPORTE *"
+                       UPON CONSOLE
+              DISPLAY "================================================"
+                       UPON CONSOLE
+              DISPLAY " FILE ESTATUS DEL ARCHIVO ES  : (" FS-REPORTE ")"
+                       UPON CONSOLE
+              DISPLAY "================================================"
+                       UPON CONSOLE
+              PERFORM XXX-CIERRA-ARCHIVOS
+              MOVE 91 TO RETURN-CODE
+              STOP RUN
+           END-IF
+           IF FS-EDP1AH NOT EQUAL 0
+              MOVE 'OPEN'     TO ACCION
+              MOVE SPACES     TO LLAVE
+              MOVE 'EDP1AH'   TO ARCHIVO
+              CALL 'DEBD1R00' USING PROGRAMA, ARCHIVO, ACCION,
+                                    LLAVE, FS-EDP1AH, FSE-EDP1AH
+              MOVE  91        TO RETURN-CODE
+              DISPLAY
+              "    >>> ALGO SALIO MAL AL ABRIR EL ARCHIVO EDP1AH <<<"
+              UPON CONSOLE
+              DISPLAY
+              "          !!! VERIFICAR DETALLES EN SPOOL !!!"
+              UPON CONSOLE
+              PERFORM XXX-CIERRA-ARCHIVOS
+              STOP RUN
+           END-IF.
+       110-VERIFICA-FS-E-E. EXIT.
+
+       200-GENERA-REPORT SECTION.
+           READ EDP1AH
+                AT END SET WKS-FIN TO TRUE
+           END-READ
+           EVALUATE FS-EDP1AH
+              WHEN 0
+                   PERFORM 211-LECTURAS-CICLOS
+              WHEN 10
+                   DISPLAY " EL ARCHIVO ESTABA VACIO EDP1AH "
+                   UPON CONSOLE
+                   PERFORM XXX-CIERRA-ARCHIVOS
+                   STOP RUN
+              WHEN OTHER
+                   PERFORM 300-ERRORES-LECTURA-FSE
+           END-EVALUATE.
+       200-GENERA-REPORT-E. EXIT.
+
+       211-LECTURAS-CICLOS SECTION.
+           PERFORM UNTIL WKS-FIN
+                   GENERATE DETAILLINE
+                   READ EDP1AH
+                        AT END SET WKS-FIN TO TRUE
+                   END-READ
+                   IF FS-EDP1AH NOT EQUAL 0 AND 10 AND 22
+                        PERFORM 300-ERRORES-LECTURA-FSE
+                   END-IF
+           END-PERFORM.
+       211-LECTURAS-CICLOS-E. EXIT.
+
+       300-ERRORES-LECTURA-FSE SECTION.
+              MOVE 'READ'     TO ACCION
+              MOVE SPACES     TO LLAVE
+              MOVE 'EDP1AH'   TO ARCHIVO
+              CALL 'DEBD1R00' USING PROGRAMA, ARCHIVO, ACCION,
+                                    LLAVE, FS-EDP1AH, FSE-EDP1AH
+              MOVE  91        TO RETURN-CODE
+              DISPLAY
+              "    >>> ALGO SALIO MAL AL LEER EL ARCHIVO EDP1AH <<<"
+              UPON CONSOLE
+              DISPLAY
+              "          !!! VERIFICAR DETALLES EN SPOOL !!!"
+              UPON CONSOLE
+              PERFORM XXX-CIERRA-ARCHIVOS
+              STOP RUN.
+       300-ERRORES-LECTURA-FSE-E. EXIT.
+
+       XXX-CIERRA-ARCHIVOS SECTION.
+           TERMINATE REPORTE-AHORRO
+           CLOSE     EDP1AH
+           CLOSE     REPORTE.
+       XXX-CIERRA-ARCHIVOS-E. EXIT.

@@ -1,0 +1,13 @@
+//JOBNUM1 JOB 504,SMITH
+//STEP1   EXEC PGM=PROGRAMA
+//DD1     DD   DSN=INPUT,
+//             DISP=SHR
+//DD2     DD   DSN=INOUT,
+//             DISP=(NEW,PASS)
+//STEP2   EXEC PGM=PROGRAMB
+//DD3     DD   DSN=INOUT,
+//             DISP=(OLD,CATLG)
+//DD4     DD   DSN=OUTPUT1, 
+//             DISP=(NEW,CATLG,DELETE)
+//DD5     DD   DSN=OUTPUT2,
+//             DISP=(NEW,CATLG,DELETE)
